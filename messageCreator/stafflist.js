@@ -29,8 +29,14 @@ module.exports = (users) => {
         flags: 32768,
         components: [
             {
-                type: 17,
-                components: userSections
+                type: 17, // Container
+                components: [
+                    {
+                        type: 10, // Text header
+                        content: "## Meet the Staff"
+                    },
+                    ...userSections
+                ]
             }
         ]
     };

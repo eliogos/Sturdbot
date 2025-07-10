@@ -101,6 +101,21 @@ client.on('messageCreate', async message => {
     }
 });
 
+const buttonHandlers = {};
+const selectMenuHandlers = {};
+
+// Dynamically load all button handlers
+fs.readdirSync(path.join(__dirname, 'handlers/button')).forEach(file => {
+    const name = file.replace('.js', '');
+    buttonHandlers[name] = require(path.join(__dirname, 'handlers/button', file));
+});
+
+// Dynamically load all select menu handlers
+fs.readdirSync(path.join(__dirname, 'handlers/selectMenu')).forEach(file => {
+    const name = file.replace('.js', '');
+    selectMenuHandlers[name] = require(path.join(__dirname, 'handlers/selectMenu', file));
+});
+
 // Slash/User/Message command handler
 client.on('interactionCreate', async interaction => {
     // Handle application commands (slash, user, message)
@@ -124,74 +139,32 @@ client.on('interactionCreate', async interaction => {
         return;
     }
 
-    // Handle button interactions
+    // Button handler
     if (interaction.isButton?.()) {
         const parts = interaction.customId.split('_');
-
-        if (parts[0] === "rules") {
-            if (parts[1] === "moderation" && parts[2] === "stafflist") {
-                console.log("[Button] Staff list button clicked by", interaction.user.tag);
-
-                await interaction.deferReply({ ephemeral: true });
-                console.log("[Button] Deferred reply sent.");
-
-                const guild = interaction.guild;
-                if (!guild) {
-                    console.log("[Button] No guild found.");
-                    return await interaction.editReply({ content: "This command can only be used in a server." });
-                }
-
-                try {
-                    console.log("[Button] Fetching all guild members...");
-                    await guild.members.fetch();
-                    console.log("[Button] Members fetched. Filtering staff...");
-                    const staffMembers = guild.members.cache.filter(
-                        member => member.roles.cache.has(ADMIN_ROLE) && !member.user.bot
-                    );
-                    console.log(`[Button] Found ${staffMembers.size} staff members.`);
-
-                    if (staffMembers.size === 0) {
-                        return await interaction.editReply({ content: "No staff members. This should be not possible..." });
-                    }
-
-                    const statusEmoji = {
-                        online: "🟢",
-                        idle: "🌙",
-                        dnd: "⛔",
-                        offline: "❌"
-                    };
-
-                    // Prepare users array for the messageCreator file
-                    const users = staffMembers.map(member => {
-                        const status = member.presence?.status || "offline";
-                        return {
-                            id: member.user.id,
-                            tag: member.user.tag,
-                            avatarURL: member.user.displayAvatarURL({ extension: 'png', size: 128 }),
-                            status: `_ _ \`${status.toUpperCase()}\``,
-                            statusEmoji: statusEmoji[status] || "❔"
-                        };
-                    });
-
-                    // Dynamically require the messageCreator file using parts[2]
-                    const stafflistMessage = require(path.join(__dirname, 'messageCreator', `${parts[2]}.js`));
-                    const messageData = stafflistMessage(users);
-
-                    console.log("[Button] Staff list messageData:", messageData);
-
-                    return await interaction.editReply(messageData);
-                } catch (err) {
-                    console.error("[Button] Error in staff list handler:", err);
-                    return await interaction.editReply({ content: "An error occurred while fetching the staff list." });
-                }
-            }
-            // more rules* button handlers here
+        const handler = buttonHandlers[parts[0]];
+        if (handler) {
+            return handler(interaction, parts, { ADMIN_ROLE, path });
         }
+    }
 
-        // more button handlers below this line
+    // Select menu handler
+    if (interaction.isStringSelectMenu?.()) {
+        const customId = interaction.customId;
+        const handler = selectMenuHandlers[customId.split('_')[0]];
+        if (handler) {
+            return handler(interaction, customId, interaction.values);
+        }
     }
 
     // Other component handlers here
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
 });
 
 client.login(process.env.DISCORD_TOKEN);
