@@ -45,13 +45,15 @@ module.exports = (users, options = {}) => {
                         components: [
                             {
                                 type: 2, // Button
-                                label: "🔄 Refresh",
+                                label: "Refresh",
+                                emoji: { name: "🔃" },
                                 style: 2,
                                 custom_id: "rules_moderation_stafflist_refresh"
                             },
                             {
                                 type: 2,
-                                label: showOffline ? "🙈 Hide Offline" : "👁 Show All",
+                                label: showOffline ? "Hide Offline" : "Show All",
+                                emoji: { name: showOffline ? "🙈" : "👁️" },
                                 style: 2,
                                 custom_id: showOffline? "rules_moderation_stafflist_toggle_hide" : "rules_moderation_stafflist_toggle_show"
                             }
