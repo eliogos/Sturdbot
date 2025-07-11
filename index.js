@@ -1,9 +1,27 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Collection, REST, Routes } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, REST, Routes, Options } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildPresences ] });
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildPresences
+    ],
+    // Disable message cache
+    sweepers: {
+        messages: {
+            interval: 60,
+            lifetime: 0  
+        }
+    },
+    makeCache: Options.cacheWithLimits({
+        MessageManager: 0
+    })
+});
 
 client.commands = new Collection();
 client.slashCommands = new Collection();
