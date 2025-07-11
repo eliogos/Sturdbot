@@ -37,7 +37,7 @@ module.exports = {
                 console.log('Data', { author: previousMessage.author, message: previousMessage });
             }
         } catch (error) {
-            console.error('Error while processing the fish catch event:', error);
+            console.error('Error while processing the cat catch event:', error);
         }
     }
 };
