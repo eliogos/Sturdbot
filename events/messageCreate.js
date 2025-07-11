@@ -5,7 +5,7 @@ module.exports = {
     name: 'messageCreate',
     async execute(message, client) {
 
-        
+
         if (message.author.id !== CAT_BOT_ID || message.channel.id !== CATCH_CHANNEL_ID) {
             return;
         }
@@ -38,7 +38,7 @@ module.exports = {
 
                 // --- XP Reward Logic ---
                 // 15% chance to get a reward
-                if (Math.random() <= 0.15) {
+                if (Math.random() <= 0.25) {
                     const reward = determineReward();
                     const success = await grantApiXp(previousMessage.author.id, previousMessage.guildId, reward.xp);
 
