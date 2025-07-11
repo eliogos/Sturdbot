@@ -1,6 +1,7 @@
 module.exports = {
 
     name: "guildMemberAdd",
+targets: ['bot_1'],
 
     async execute(member) {
 
