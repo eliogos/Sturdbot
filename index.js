@@ -76,6 +76,7 @@ function loadCommands(client, dir, context = []) {
 // Load events
 function loadEvents(client, dir) {
 	const files = fs.readdirSync(dir, { withFileTypes: true });
+
 	for (const file of files) {
 		if (file.isDirectory()) {
 			loadEvents(client, path.join(dir, file.name));
@@ -84,13 +85,22 @@ function loadEvents(client, dir) {
 			!file.name.startsWith('__archived__')
 		) {
 			const eventModule = require(path.join(dir, file.name));
-			if (!eventModule.name || typeof eventModule.execute !== 'function') continue;
+
+			// Check if the event is intended for this bot
+			const targets = eventModule.targets || ['bot_1', 'bot_2'];
+			if (!targets.includes(client.label)) continue;
+
+			if (!eventModule.name || typeof eventModule.execute !== 'function') {
+				console.warn(`[Event Loader] ${file.name} missing 'name' or 'execute'. Skipping.`);
+				continue;
+			}
 
 			if (eventModule.once) {
 				client.once(eventModule.name, (...args) => eventModule.execute(...args, client));
 			} else {
 				client.on(eventModule.name, (...args) => eventModule.execute(...args, client));
 			}
+
 			client.events.set(eventModule.name, eventModule);
 		}
 	}
