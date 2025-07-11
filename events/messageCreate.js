@@ -3,6 +3,7 @@ const CAT_BOT_ID = '966695034340663367';
 
 module.exports = {
     name: 'messageCreate',
+    targets: ['bot_1'],
     async execute(message, client) {
 
 
