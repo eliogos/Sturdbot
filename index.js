@@ -54,7 +54,7 @@ function loadEvents(dir) {
         ) {
             const event = require(path.join(dir, file.name));
             const eventName = file.name.replace('.js', '');
-            client.on(eventName, event.bind(null, client));
+            client.on(eventName, (...args) => event.execute(...args));
             client.events.set(eventName, event);
         }
     }

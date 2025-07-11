@@ -1,4 +1,6 @@
-module.exports = (users) => {
+module.exports = (users, options = {}) => {
+    const { showOffline = true } = options;
+
     const userSections = [];
     users.forEach((user, idx) => {
         userSections.push({
@@ -16,6 +18,7 @@ module.exports = (users) => {
                 }
             }
         });
+
         if (idx < users.length - 1) {
             userSections.push({
                 type: 14, // Separator
@@ -29,13 +32,31 @@ module.exports = (users) => {
         flags: 32768,
         components: [
             {
-                type: 17, // Container
+                type: 17, // Panel container
+                accent_color: null,
                 components: [
                     {
-                        type: 10, // Text header
-                        content: "## Meet the Staff"
+                        type: 10,
+                        content: "# Meet the Staff"
                     },
-                    ...userSections
+                    ...userSections,
+                    {
+                        type: 1, // Action Row
+                        components: [
+                            {
+                                type: 2, // Button
+                                label: "🔄 Refresh",
+                                style: 2,
+                                custom_id: "rules_moderation_stafflist_refresh"
+                            },
+                            {
+                                type: 2,
+                                label: showOffline ? "🙈 Hide Offline" : "👁 Show All",
+                                style: 2,
+                                custom_id: showOffline? "rules_moderation_stafflist_toggle_hide" : "rules_moderation_stafflist_toggle_show"
+                            }
+                        ]
+                    }
                 ]
             }
         ]

@@ -1,28 +1,30 @@
 module.exports = async (interaction, parts, context) => {
     if (parts[1] === "moderation" && parts[2] === "stafflist") {
-        console.log("[Button] Staff list button clicked by", interaction.user.tag);
+        const subAction = parts[3] || "default";
+        const isInitial = subAction === "default";
+        const isRefresh = subAction === "refresh";
+        const toggleHide = subAction === "toggle" && parts[4] === "hide";
+        const toggleShow = subAction === "toggle" && parts[4] === "show";
+        const hideOffline = toggleHide;
 
-        await interaction.deferReply({ ephemeral: true });
-        console.log("[Button] Deferred reply sent.");
+        // Defer only if it's the first interaction (not a button update)
+        if (isInitial) {
+            await interaction.deferReply({ ephemeral: true });
+        }
 
         const guild = interaction.guild;
         if (!guild) {
-            console.log("[Button] No guild found.");
-            return await interaction.editReply({ content: "This command can only be used in a server." });
+            const errorMsg = { content: "This command can only be used in a server." };
+            return isInitial
+                ? interaction.editReply(errorMsg)
+                : interaction.update(errorMsg);
         }
 
         try {
-            console.log("[Button] Fetching all guild members...");
             await guild.members.fetch();
-            console.log("[Button] Members fetched. Filtering staff...");
             const staffMembers = guild.members.cache.filter(
                 member => member.roles.cache.has(context.ADMIN_ROLE) && !member.user.bot
             );
-            console.log(`[Button] Found ${staffMembers.size} staff members.`);
-
-            if (staffMembers.size === 0) {
-                return await interaction.editReply({ content: "No staff members. This should be not possible..." });
-            }
 
             const statusEmoji = {
                 online: "🟢",
@@ -31,7 +33,6 @@ module.exports = async (interaction, parts, context) => {
                 offline: "❌"
             };
 
-            // Prepare users array for the messageCreator file
             let users = staffMembers.map(member => {
                 const status = member.presence?.status || "offline";
                 return {
@@ -44,21 +45,27 @@ module.exports = async (interaction, parts, context) => {
                 };
             });
 
-            // Sort users by status: online > idle > dnd > offline
+            if (hideOffline) {
+                users = users.filter(user => user.statusRaw !== "offline");
+            }
+
             const statusOrder = { online: 0, idle: 1, dnd: 2, offline: 3 };
             users.sort((a, b) => (statusOrder[a.statusRaw] ?? 4) - (statusOrder[b.statusRaw] ?? 4));
 
-            // Dynamically require the messageCreator file using parts[2]
-            const stafflistMessage = require(context.path.join(__dirname, '../../messageCreator', `${parts[2]}.js`));
-            const messageData = stafflistMessage(users);
+            const stafflistMessage = require(context.path.join(__dirname, '../../messageCreator/stafflist.js'));
+            const messageData = stafflistMessage(users, { showOffline: !hideOffline });
 
-            console.log("[Button] Staff list messageData:", messageData);
-
-            return await interaction.editReply(messageData);
+            return isInitial
+                ? interaction.editReply(messageData)
+                : interaction.update(messageData);
         } catch (err) {
             console.error("[Button] Error in staff list handler:", err);
-            return await interaction.editReply({ content: "An error occurred while fetching the staff list." });
+            const errorMessage = { content: "An error occurred while fetching the staff list." };
+            return isInitial
+                ? interaction.editReply(errorMessage)
+                : interaction.update(errorMessage);
         }
     }
-    // more rules* button handlers here
+
+    // more button handlers...
 };
