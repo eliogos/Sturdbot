@@ -170,7 +170,7 @@ client.on('interactionCreate', async interaction => {
 });
 
 // Memory usage monitor
-const MEMORY_LIMIT_MB = 128;
+const MEMORY_LIMIT_MB = 140;
 
 setInterval(() => {
     const memoryUsage = process.memoryUsage();
