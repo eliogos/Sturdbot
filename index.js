@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Collection, REST, Routes, Options } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, REST, Routes, Options, MessageFlags } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -32,6 +32,8 @@ const commandsPath = path.join(__dirname, 'commands');
 const eventsPath = path.join(__dirname, 'events');
 
 const ADMIN_ROLE = process.env.ADMIN_ROLE;
+// Safely load developer IDs from your .env file
+const DEV_IDS = process.env.DEV_IDS?.split(',') || [];
 
 // Load commands from the commands directory
 function loadCommands(dir, context = []) {
@@ -70,10 +72,20 @@ function loadEvents(dir) {
             file.name.endsWith('.js') &&
             !file.name.startsWith('__archived__')
         ) {
-            const event = require(path.join(dir, file.name));
-            const eventName = file.name.replace('.js', '');
-            client.on(eventName, (...args) => event.execute(...args));
-            client.events.set(eventName, event);
+            const eventModule = require(path.join(dir, file.name));
+
+            // The event files should export an object with 'name' and 'execute' properties.
+            if (!eventModule.name || typeof eventModule.execute !== 'function') {
+                console.warn(`[Event Loader] The event in ${file.name} is missing a 'name' or 'execute' property. Skipping.`);
+                continue;
+            }
+
+            if (eventModule.once) {
+                client.once(eventModule.name, (...args) => eventModule.execute(...args, client));
+            } else {
+                client.on(eventModule.name, (...args) => eventModule.execute(...args, client));
+            }
+            client.events.set(eventModule.name, eventModule);
         }
     }
 }
@@ -81,27 +93,6 @@ function loadEvents(dir) {
 // Load commands and events
 loadCommands(commandsPath);
 loadEvents(eventsPath);
-
-// Register slash commands with Discord
-client.once('ready', async () => {
-    console.log(`Logged in as ${client.user.tag}!`);
-    // Prepare all application commands (slash, user, message)
-    const appCommandsArray = [];
-    client.applicationCommands.forEach(cmd => {
-        if (cmd.data) appCommandsArray.push(cmd.data.toJSON ? cmd.data.toJSON() : cmd.data);
-    });
-
-    const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
-    try {
-        await rest.put(
-            Routes.applicationCommands(client.user.id),
-            { body: appCommandsArray }
-        );
-        console.log('Application commands registered.');
-    } catch (error) {
-        console.error(error);
-    }
-});
 
 // Message command handler
 client.on('messageCreate', async message => {
@@ -145,13 +136,13 @@ client.on('interactionCreate', async interaction => {
         const command = client.applicationCommands.get(interaction.commandName);
         if (command) {
             if (command.isDevCommand && !DEV_IDS.includes(interaction.user.id)) {
-                return interaction.reply({ content: 'You are not authorized to use this command.', ephemeral: true });
+                return interaction.reply({ content: 'You are not authorized to use this command.', flags: MessageFlags.Ephemeral });
             }
             try {
                 await command.execute(interaction, client);
             } catch (error) {
                 console.error(error);
-                await interaction.reply({ content: 'There was an error executing that command.', ephemeral: true });
+                await interaction.reply({ content: 'There was an error executing that command.', flags: MessageFlags.Ephemeral });
             }
         }
         return;
@@ -177,6 +168,31 @@ client.on('interactionCreate', async interaction => {
 
     // Other component handlers here
 });
+
+// Memory usage monitor
+const MEMORY_LIMIT_MB = 100;
+
+setInterval(() => {
+    const memoryUsage = process.memoryUsage();
+
+    const rssMb = memoryUsage.rss / 1024 / 1024;
+
+
+
+    if (rssMb >= MEMORY_LIMIT_MB) {
+        console.warn(`[Memory Monitor] RSS memory (${rssMb.toFixed(2)} MB) has reached the limit of ${MEMORY_LIMIT_MB} MB. Clearing caches...`);
+
+        client.guilds.cache.forEach(guild => {
+            guild.members.cache.clear();
+            guild.presences.cache.clear();
+        });
+
+        console.log('[Memory Monitor] Caches cleared successfully.');
+
+
+        if (global.gc) { global.gc(); console.log('[Memory Monitor] Garbage collection triggered.'); }
+    }
+}, 30000);
 
 process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection:', reason);

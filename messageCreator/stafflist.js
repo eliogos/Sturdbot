@@ -8,7 +8,7 @@ module.exports = (users, options = {}) => {
             components: [
                 {
                     type: 10, // Text
-                    content: `<@${user.id}>\n-# ${user.statusEmoji} ${user.status}`
+                    content: `<@${user.id}>_ _ _ _ _ _\n-# ${user.statusEmoji} ${user.status}`
                 }
             ],
             accessory: {
@@ -23,7 +23,7 @@ module.exports = (users, options = {}) => {
             userSections.push({
                 type: 14, // Separator
                 divider: true,
-                spacing: 1
+                spacing: 2
             });
         }
     });
@@ -32,14 +32,18 @@ module.exports = (users, options = {}) => {
         flags: 32768,
         components: [
             {
-                type: 17, // Panel container
+                type: 17, // Container
                 accent_color: null,
                 components: [
                     {
                         type: 10,
-                        content: "# Meet the Staff"
+                        content: "# Meet the Staff\nHere are the staff members of this server.\nYou may message them for concerns, questions, or suggestions.\n_ _"
                     },
                     ...userSections,
+                    {
+                        type: 10,
+                        content: "_ _"
+                    },
                     {
                         type: 1, // Action Row
                         components: [

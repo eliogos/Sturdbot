@@ -1,3 +1,4 @@
+const { MessageFlags } = require('discord.js');
 module.exports = async (interaction, parts, context) => {
     if (parts[1] === "moderation" && parts[2] === "stafflist") {
         const subAction = parts[3] || "default";
@@ -9,7 +10,7 @@ module.exports = async (interaction, parts, context) => {
 
         // Defer only if it's the first interaction (not a button update)
         if (isInitial) {
-            await interaction.deferReply({ ephemeral: true });
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         }
 
         const guild = interaction.guild;
@@ -26,11 +27,11 @@ module.exports = async (interaction, parts, context) => {
                 member => member.roles.cache.has(context.ADMIN_ROLE) && !member.user.bot
             );
 
-            const statusEmoji = {
-                online: "🟢",
-                idle: "🌙",
-                dnd: "⛔",
-                offline: "❌"
+             const statusEmoji = {
+                online: "<:on:1393166167803170926>",
+                idle: "<:idle:1393166174857990165>",
+                dnd: "<:dnd:1393166182315589652>",
+                offline: "<:off:1393166159288729670>"
             };
 
             let users = staffMembers.map(member => {
@@ -39,7 +40,7 @@ module.exports = async (interaction, parts, context) => {
                     id: member.user.id,
                     tag: member.user.tag,
                     avatarURL: member.user.displayAvatarURL({ extension: 'png', size: 128 }),
-                    status: `_ _ \`${status.toUpperCase()}\``,
+                    status: `\`${status.toUpperCase()}\``,
                     statusRaw: status,
                     statusEmoji: statusEmoji[status] || "❔"
                 };
