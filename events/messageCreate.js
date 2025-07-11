@@ -38,7 +38,7 @@ module.exports = {
                 const gmt8Hour = gmt8Date.getUTCHours();
 
                 // --- Determine Reward Chance ---
-                let rewardChance = 0.15; // Base 15% chance.
+                let rewardChance = 0.35; // Base 35% chance.
                 const isWeekend = gmt8Day % 6 === 0; // Use modulo to check for Sat (6) or Sun (0).
                 let chanceMessage;
 
