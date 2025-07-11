@@ -36,9 +36,10 @@ module.exports = {
                 console.log(`User: ${previousMessage.author.tag} (ID: ${previousMessage.author.id})`);
                 console.log(`Caught with message: "${previousMessage.content}" (ID: ${previousMessage.id})`);
 
-                // --- XP Reward Logic ---
-                // 15% chance to get a reward
-                if (Math.random() <= 0.25) {
+                
+                const chance = 0.35;
+
+                if (Math.random() <= chance) {
                     const reward = determineReward();
                     const success = await grantApiXp(previousMessage.author.id, previousMessage.guildId, reward.xp);
 
@@ -103,7 +104,7 @@ async function grantApiXp(userId, guildId, xpAmount) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.KIAI_KEY}`
+                'Authorization': `${process.env.KIAI_KEY}`
             },
             body: JSON.stringify({ xp: xpAmount })
         });
