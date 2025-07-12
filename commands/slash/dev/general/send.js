@@ -15,6 +15,9 @@ module.exports = {
                 .setDescription('Channel to send the message to')
                 .addChannelTypes(ChannelType.GuildText)
                 .setRequired(true)),
+
+        targets: ['bot_1'],
+
     async execute(interaction) {
         const filename = interaction.options.getString('filename');
         const channel = interaction.options.getChannel('channel');

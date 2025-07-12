@@ -6,8 +6,6 @@ const ADMIN_ROLE = process.env.ADMIN_ROLE; const DEV_IDS = process.env.DEV_IDS?.
 
 const clientIds = { bot_1: process.env.CLIENT_ID_BOT_1, bot_2: process.env.CLIENT_ID_BOT_2 };
 
-const TEST_GUILD_ID = process.env.TEST_GUILD_ID;
-
 function createClient(label) { const client = new Client({ intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildPresences ], sweepers: { messages: { interval: 60, lifetime: 0 } }, makeCache: Options.cacheWithLimits({ MessageManager: 0 }) });
 
 client.label = label;
@@ -140,7 +138,7 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
-const MEMORY_LIMIT_MB = 200;
+const MEMORY_LIMIT_MB = 160;
 setInterval(() => {
     const memoryUsage = process.memoryUsage();
     const rssMb = memoryUsage.rss / 1024 / 1024;
