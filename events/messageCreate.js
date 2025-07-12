@@ -5,56 +5,44 @@ module.exports = {
     name: 'messageCreate',
     targets: ['bot_1'],
     async execute(message, client) {
-
-
-        if (message.author.id !== CAT_BOT_ID || message.channel.id !== CATCH_CHANNEL_ID) {
-            return;
-        }
+        if (message.author.id !== CAT_BOT_ID || message.channel.id !== CATCH_CHANNEL_ID) return;
 
         const content = message.content.toLowerCase();
         const isCatchMessage = content.includes('cought') || content.includes('c0ught') || content.includes('caught') || content.includes('cowought');
 
-        if (!isCatchMessage) {
-            return;
-        }
+        if (!isCatchMessage) return;
 
         try {
-            // Fetch the single message sent immediately before the bot's "catch" message.
             const previousMessages = await message.channel.messages.fetch({ before: message.id, limit: 1 });
             const previousMessage = previousMessages.first();
 
-            // If there's no previous message, stop.
-            if (!previousMessage) {
-                return;
-            }
+            if (!previousMessage) return;
 
-            // Check if the previous message was from a human and was exactly "cat".
             const isHuman = !previousMessage.author.bot;
             const isCatMessage = previousMessage.content.toLowerCase() === 'cat';
 
             if (isHuman && isCatMessage) {
-                // --- Time-based bonus logic (GMT+8) ---
                 const gmt8Date = new Date(Date.now() + 8 * 60 * 60 * 1000);
-                const gmt8Day = gmt8Date.getUTCDay(); // 0=Sun, 6=Sat
+                const gmt8Day = gmt8Date.getUTCDay();
                 const gmt8Hour = gmt8Date.getUTCHours();
 
-                // --- Determine Reward Chance ---
-                let rewardChance = 0.35; // Base 35% chance.
-                const isWeekend = gmt8Day % 6 === 0; // Use modulo to check for Sat (6) or Sun (0).
+                let rewardChance = 0.35;
+                const isWeekend = gmt8Day % 6 === 0;
                 let chanceMessage;
 
                 if (isWeekend) {
-                    rewardChance *= 2; // Double the chance on weekends.
+                    rewardChance *= 2;
                     chanceMessage = `It's the weekend! Your chance for a reward is increased to ${rewardChance * 100}%!`;
                 } else {
                     chanceMessage = `There is a ${rewardChance * 100}% chance to get a reward from catching a cat.`;
                 }
 
                 if (Math.random() <= rewardChance) {
-                    let reward = determineReward();
+                    const member = await message.guild.members.fetch(previousMessage.author.id);
+                    const isBooster = member.premiumSince !== null;
+                    let reward = determineReward(isBooster);
                     let wasDoubled = false;
 
-                    // --- 50/50 chance to double XP on even hours ---
                     const isEvenHour = gmt8Hour % 2 === 0;
                     if (isEvenHour && Math.random() < 0.5) {
                         reward.xp *= 2;
@@ -65,14 +53,10 @@ module.exports = {
                     const catImageUrl = await getCatImageUrl();
 
                     if (success) {
-                        // Build the reward message, including the "doubled" status if applicable.
                         let rewardLine = `You received ${reward.name} Crate** containing \`${reward.xp} XP\`!`;
-                        if (wasDoubled) {
-                            rewardLine += ' **(DOUBLED!)**';
-                        }
+                        if (wasDoubled) rewardLine += ' **(DOUBLED!)**';
 
                         await message.channel.send({
-
                             flags: 32768,
                             components: [
                                 {
@@ -93,20 +77,11 @@ module.exports = {
                                             ],
                                             accessory: {
                                                 type: 11,
-                                                media: {
-                                                    url: catImageUrl
-                                                }
+                                                media: { url: catImageUrl }
                                             }
                                         },
-                                        {
-                                            type: 14,
-                                            divider: true,
-                                            spacing: 1
-                                        },
-                                        {
-                                            type: 10,
-                                            content: `-# ${chanceMessage}`
-                                        }
+                                        { type: 14, divider: true, spacing: 1 },
+                                        { type: 10, content: `-# ${chanceMessage}` }
                                     ]
                                 }
                             ],
@@ -124,17 +99,14 @@ module.exports = {
     }
 };
 
-/**
- * Determines the XP reward based on predefined tiers and probabilities.
- */
-function determineReward() {
+function determineReward(isBooster = false) {
     const tiers = [
-        { name: 'a **Common', minXp: 10, maxXp: 30, chance: 0.55 },
-        { name: 'an **Uncommon', minXp: 31, maxXp: 60, chance: 0.22 },
-        { name: 'a **Superior', minXp: 61, maxXp: 100, chance: 0.10 },
-        { name: 'a **Rare', minXp: 101, maxXp: 200, chance: 0.07 },
-        { name: 'an **Epic', minXp: 201, maxXp: 500, chance: 0.05 },
-        { name: 'a **Legendary', minXp: 1000, maxXp: 1000, chance: 0.005 }
+        { name: 'a **Common', minXp: 10, maxXp: 30, chance: isBooster ? 0.25 : 0.55 },
+        { name: 'an **Uncommon', minXp: 31, maxXp: 60, chance: isBooster ? 0.22 : 0.22 },
+        { name: 'a **Superior', minXp: 61, maxXp: 100, chance: isBooster ? 0.18 : 0.10 },
+        { name: 'a **Rare', minXp: 101, maxXp: 200, chance: isBooster ? 0.13 : 0.07 },
+        { name: 'an **Epic', minXp: 201, maxXp: 500, chance: isBooster ? 0.12 : 0.05 },
+        { name: 'a **Legendary', minXp: 1000, maxXp: 1000, chance: isBooster ? 0.10 : 0.005 }
     ];
 
     const random = Math.random();
@@ -150,17 +122,13 @@ function determineReward() {
         }
     }
 
-    // Fallback in case of rounding errors
     return { name: 'a **Common', xp: getRandomInt(10, 30) };
 }
 
-/**
- * Grants XP to a user via the Kiai API.
- * @param {string} userId The user's Discord ID.
- * @param {string} guildId The guild's Discord ID.
- * @param {number} xpAmount The amount of XP to grant.
- * @returns {Promise<boolean>} True if the API call was successful, false otherwise.
- */
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 async function grantApiXp(userId, guildId, xpAmount) {
     const url = `https://api.kiai.app/v2/${guildId}/member/${userId}/xp`;
     const apiKey = process.env.KIAI_KEY;
@@ -184,6 +152,7 @@ async function grantApiXp(userId, guildId, xpAmount) {
             console.error(`Kiai API Error: ${response.status} ${response.statusText}`, await response.json().catch(() => ({})));
             return false;
         }
+
         console.log(`Successfully granted ${xpAmount} XP to user ${userId} in guild ${guildId}.`);
         return true;
     } catch (error) {
@@ -192,23 +161,9 @@ async function grantApiXp(userId, guildId, xpAmount) {
     }
 }
 
-/**
- * Generates a random integer between min and max (inclusive).
- */
-function getRandomInt(min, max) {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-/**
- * Fetches a random cat image URL from TheCatAPI.
- * @returns {Promise<string>} The URL of a cat image.
- */
 async function getCatImageUrl() {
     const url = 'https://api.thecatapi.com/v1/images/search';
     const apiKey = process.env.CAT_API;
-    // A static, reliable fallback image from the same API service.
     const fallbackUrl = 'https://cdn2.thecatapi.com/images/a05.jpg';
 
     if (!apiKey) {
@@ -218,9 +173,7 @@ async function getCatImageUrl() {
 
     try {
         const response = await fetch(url, {
-            headers: {
-                'x-api-key': apiKey
-            }
+            headers: { 'x-api-key': apiKey }
         });
 
         if (!response.ok) {
@@ -229,7 +182,6 @@ async function getCatImageUrl() {
         }
 
         const data = await response.json();
-        // Ensure the response is valid and contains a URL before returning it.
         return (data && data.length > 0 && data[0].url) ? data[0].url : fallbackUrl;
     } catch (error) {
         console.error('[Cat API] Failed to make request:', error);
