@@ -66,8 +66,20 @@ fs.readdirSync(path.join(__dirname, 'handlers/selectMenu')).forEach(file => { co
 
 for (const [label, client] of Object.entries(clients)) { loadCommands(client, commandsPath); loadEvents(client, eventsPath);
 
-const rest = new REST({ version: '10' }).setToken(process.env[`DISCORD_TOKEN_${label.toUpperCase()}`]);
+const token = process.env[`DISCORD_TOKEN_${label.toUpperCase()}`];
+if (!token) {
+    console.error(`[${label}] Missing DISCORD_TOKEN_${label.toUpperCase()}`);
+    continue;
+}
+
+const rest = new REST({ version: '10' }).setToken(token);
 const slashCommands = Array.from(client.applicationCommands.values()).map(cmd => cmd.data.toJSON());
+
+if (!clientIds[label]) {
+    console.error(`[${label}] Missing CLIENT_ID for registration.`);
+    continue;
+}
+
 rest.put(Routes.applicationGuildCommands(clientIds[label], TEST_GUILD_ID), { body: slashCommands })
     .then(() => console.log(`[${label}] Slash commands registered`))
     .catch(err => console.error(`[${label}] Failed to register slash commands`, err));
@@ -143,7 +155,7 @@ setInterval(() => {
     }
 }, 30000);
 
-client.login(process.env[`DISCORD_TOKEN_${label.toUpperCase()}`]);
+client.login(token);
 
 }
 
