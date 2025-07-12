@@ -80,9 +80,12 @@ if (!clientIds[label]) {
     continue;
 }
 
-rest.put(Routes.applicationGuildCommands(clientIds[label], TEST_GUILD_ID), { body: slashCommands })
-    .then(() => console.log(`[${label}] Slash commands registered`))
-    .catch(err => console.error(`[${label}] Failed to register slash commands`, err));
+rest.put(
+  Routes.applicationCommands(clientIds[label]),
+  { body: slashCommands }
+)
+.then(() => console.log(`[${label}] Global slash commands registered`))
+.catch(err => console.error(`[${label}] Failed to register global commands`, err));
 
 client.on('messageCreate', async message => {
     if (!message.content.startsWith('!') || message.author.bot) return;
