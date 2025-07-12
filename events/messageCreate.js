@@ -129,12 +129,12 @@ module.exports = {
  */
 function determineReward() {
     const tiers = [
-        { name: 'a **Common', minXp: 10, maxXp: 30, chance: 0.45 },
-        { name: 'an **Uncommon', minXp: 31, maxXp: 60, chance: 0.25 },
-        { name: 'a **Superior', minXp: 61, maxXp: 100, chance: 0.15 },
-        { name: 'a **Rare', minXp: 101, maxXp: 200, chance: 0.08 },
-        { name: 'an **Epic', minXp: 201, maxXp: 500, chance: 0.02 },
-        { name: 'a **Legendary', minXp: 1000, maxXp: 1000, chance: 0.05 }
+        { name: 'a **Common', minXp: 10, maxXp: 30, chance: 0.55 },
+        { name: 'an **Uncommon', minXp: 31, maxXp: 60, chance: 0.22 },
+        { name: 'a **Superior', minXp: 61, maxXp: 100, chance: 0.10 },
+        { name: 'a **Rare', minXp: 101, maxXp: 200, chance: 0.07 },
+        { name: 'an **Epic', minXp: 201, maxXp: 500, chance: 0.05 },
+        { name: 'a **Legendary', minXp: 1000, maxXp: 1000, chance: 0.005 }
     ];
 
     const random = Math.random();
@@ -150,8 +150,8 @@ function determineReward() {
         }
     }
 
-    // Fallback to common tier just in case of floating point inaccuracies
-    return { name: 'a Common', xp: getRandomInt(10, 30) };
+    // Fallback in case of rounding errors
+    return { name: 'a **Common', xp: getRandomInt(10, 30) };
 }
 
 /**
