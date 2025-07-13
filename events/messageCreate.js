@@ -30,16 +30,18 @@ module.exports = {
 			const gmt8Day = gmt8Date.getUTCDay();
 			const gmt8Hour = gmt8Date.getUTCHours();
 
-			let rewardChance = 0.315;
+			let rewardChance = 0.335;
 			const isWeekend = gmt8Day % 6 === 0;
 			let chanceMessage;
 
 			if (isWeekend) {
-				rewardChance *= 2;
-				chanceMessage = `It's the weekend! Your chance for a reward is increased to ${rewardChance * 100}%!`;
-			} else {
-				chanceMessage = `There is a ${rewardChance * 100}% chance to get a reward from catching a cat.`;
-			}
+	const weekendMultiplier = Math.random() * (2 - 1.1) + 1.1; // random between 1.1 and 2
+	rewardChance *= weekendMultiplier;
+	rewardChance = Math.min(rewardChance, 1); // just in case it exceeds 100%
+	chanceMessage = `It's the weekend! Your chance for a reward is increased to **${(rewardChance * 100).toFixed(1)}%**!`;
+} else {
+	chanceMessage = `You have a **${(rewardChance * 100).toFixed(1)}%** chance to get a reward from catching a cat.`;
+}
 
 			if (hasImpossibleRole || Math.random() <= rewardChance) {
 				let reward = hasImpossibleRole ? getImpossibleReward() : determineDynamicReward(isBooster);
@@ -57,7 +59,7 @@ module.exports = {
 				const catImageUrl = await getCatImageUrl();
 
 				if (success) {
-					let rewardLine = `You received ${reward.emoji} _ _ ${reward.name} Crate** containing \`${reward.xp} XP\`!`;
+					let rewardLine = `You received ${reward.name} Crate** containing \`${reward.xp} XP\`!`;
 					if (wasDoubled) rewardLine += ' **(DOUBLED!)**';
 
 					await message.channel.send({
