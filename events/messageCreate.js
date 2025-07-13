@@ -1,3 +1,4 @@
+const { MessageFlags } = require('discord.js');
 const CATCH_CHANNEL_ID = '1293555235478048768';
 const CAT_BOT_ID = '966695034340663367';
 const IMPOSSIBLE_ROLE_ID = '1393812654715441192';
@@ -63,7 +64,8 @@ module.exports = {
 					if (wasDoubled) rewardLine += ' **(DOUBLED!)**';
 
 					await message.channel.send({
-						flags: 32768,
+						allowed_mentions: { replied_user: false },
+						flags: MessageFlags.IsComponentsV2 | MessageFlags.SuppressNotifications,
 						components: [
 							{
 								type: 17,
