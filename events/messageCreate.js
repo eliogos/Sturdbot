@@ -9,18 +9,15 @@ module.exports = {
 
         const content = message.content.toLowerCase();
         const isCatchMessage = content.includes('cought') || content.includes('c0ught') || content.includes('caught') || content.includes('cowought');
-
         if (!isCatchMessage) return;
 
         try {
             const previousMessages = await message.channel.messages.fetch({ before: message.id, limit: 1 });
             const previousMessage = previousMessages.first();
-
             if (!previousMessage) return;
 
             const isHuman = !previousMessage.author.bot;
             const isCatMessage = previousMessage.content.toLowerCase() === 'cat';
-
             if (isHuman && isCatMessage) {
                 const gmt8Date = new Date(Date.now() + 8 * 60 * 60 * 1000);
                 const gmt8Day = gmt8Date.getUTCDay();
@@ -40,7 +37,8 @@ module.exports = {
                 if (Math.random() <= rewardChance) {
                     const member = await message.guild.members.fetch(previousMessage.author.id);
                     const isBooster = member.premiumSince !== null;
-                    let reward = determineReward(isBooster);
+
+                    const reward = determineDynamicReward(isBooster);
                     let wasDoubled = false;
 
                     const isEvenHour = gmt8Hour % 2 === 0;
@@ -99,30 +97,52 @@ module.exports = {
     }
 };
 
-function determineReward(isBooster = false) {
+function determineDynamicReward(isBooster = false) {
     const tiers = [
-        { name: 'a **Common', minXp: 10, maxXp: 30, chance: isBooster ? 0.25 : 0.55 },
-        { name: 'an **Uncommon', minXp: 31, maxXp: 60, chance: isBooster ? 0.22 : 0.22 },
-        { name: 'a **Superior', minXp: 61, maxXp: 100, chance: isBooster ? 0.18 : 0.10 },
-        { name: 'a **Rare', minXp: 101, maxXp: 200, chance: isBooster ? 0.13 : 0.07 },
-        { name: 'an **Epic', minXp: 201, maxXp: 500, chance: isBooster ? 0.12 : 0.05 },
-        { name: 'a **Legendary', minXp: 1000, maxXp: 1000, chance: isBooster ? 0.10 : 0.005 }
+        { name: 'Common',     minXp: 10,   maxXp: 30 },
+        { name: 'Uncommon',   minXp: 31,   maxXp: 60 },
+        { name: 'Superior',   minXp: 61,   maxXp: 100 },
+        { name: 'Rare',       minXp: 101,  maxXp: 200 },
+        { name: 'Epic',       minXp: 201,  maxXp: 500 },
+        { name: 'Legendary',  minXp: 1000, maxXp: 1000 },
+        { name: 'Mythic',     minXp: 2000, maxXp: 2500 }
     ];
 
-    const random = Math.random();
-    let cumulativeChance = 0;
+    const totalTiers = tiers.length;
 
-    for (const tier of tiers) {
-        cumulativeChance += tier.chance;
-        if (random <= cumulativeChance) {
+    const weights = tiers.map((_, i) => {
+        const baseWeight = totalTiers - i;
+        return isBooster ? baseWeight * 0.5 : baseWeight;
+    });
+
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+
+    const random = Math.random();
+    let cumulative = 0;
+
+    for (let i = 0; i < tiers.length; i++) {
+        cumulative += weights[i] / totalWeight;
+        if (random <= cumulative) {
+            const tier = tiers[i];
             return {
-                name: tier.name,
+                name: `${getPrefix(tier.name)} **${tier.name}`,
                 xp: getRandomInt(tier.minXp, tier.maxXp)
             };
         }
     }
 
-    return { name: 'a **Common', xp: getRandomInt(10, 30) };
+    // Fallback
+    const fallback = tiers[0];
+    return {
+        name: `${getPrefix(fallback.name)} **${fallback.name}`,
+        xp: getRandomInt(fallback.minXp, fallback.maxXp)
+    };
+}
+
+function getPrefix(word) {
+    if (!word || typeof word !== "string") return "a";
+    const firstChar = word.trim().charAt(0).toLowerCase();
+    return ["a", "e", "i", "o", "u"].includes(firstChar) ? "an" : "a";
 }
 
 function getRandomInt(min, max) {
