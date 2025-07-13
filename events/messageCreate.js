@@ -64,7 +64,7 @@ module.exports = {
 					if (wasDoubled) rewardLine += ' **(DOUBLED!)**';
 
 					await message.channel.send({
-						allowed_mentions: { replied_user: false },
+						allowedMentions: { repliedUser: false },
 						flags: MessageFlags.IsComponentsV2 | MessageFlags.SuppressNotifications,
 						components: [
 							{
