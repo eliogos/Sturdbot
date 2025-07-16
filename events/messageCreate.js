@@ -1,5 +1,5 @@
-const userCaughtCat = require('./flows/userCaughtCat');
-const deleteCatForcespawnCommand = require('./flows/deleteCatForcespawnCommand');
+const userCaughtCat = require('../src/flows/userCaughtCat');
+const deleteCatForcespawnCommand = require('../src/flows/deleteCatForcespawnCommand');
 
 module.exports = {
 	name: 'messageCreate',
