@@ -1,0 +1,96 @@
+const { MessageFlags } = require('discord.js');
+const { grantApiXp, getCatImageUrl } = require('../utils/api');
+const { determineDynamicReward, getImpossibleReward } = require('../utils/rewards');
+
+const CATCH_CHANNEL_ID = '1293555235478048768';
+const CAT_BOT_ID = '966695034340663367';
+const IMPOSSIBLE_ROLE_ID = '1393812654715441192';
+
+module.exports = async function userCaughtCat(message, client) {
+	if (message.author.id !== CAT_BOT_ID || message.channel.id !== CATCH_CHANNEL_ID) return false;
+
+	const content = message.content.toLowerCase();
+	const isCatchMessage = content.includes('cought') || content.includes('c0ught') || content.includes('caught') || content.includes('cowought');
+	if (!isCatchMessage) return false;
+
+	try {
+		const previousMessages = await message.channel.messages.fetch({ before: message.id, limit: 1 });
+		const previousMessage = previousMessages.first();
+		if (!previousMessage) return false;
+
+		const isHuman = !previousMessage.author.bot;
+		const isCatMessage = previousMessage.content.toLowerCase() === 'cat';
+		if (!isHuman || !isCatMessage) return false;
+
+		const member = await message.guild.members.fetch(previousMessage.author.id);
+		const isBooster = member.premiumSince !== null;
+		const hasImpossibleRole = member.roles.cache.has(IMPOSSIBLE_ROLE_ID);
+
+		const gmt8Date = new Date(Date.now() + 8 * 60 * 60 * 1000);
+		const gmt8Day = gmt8Date.getUTCDay();
+		const gmt8Hour = gmt8Date.getUTCHours();
+
+		let rewardChance = 0.47;
+		const isWeekend = gmt8Day % 6 === 0;
+		let chanceMessage;
+
+		if (isWeekend) {
+			const weekendMultiplier = Math.random() * (2 - 1.1) + 1.1;
+			rewardChance *= weekendMultiplier;
+			rewardChance = Math.min(rewardChance, 1);
+			chanceMessage = `It's the weekend! Your chance for a reward is increased to **${(rewardChance * 100).toFixed(1)}%**!`;
+		} else {
+			chanceMessage = `You have a **${(rewardChance * 100).toFixed(1)}%** chance to get a reward from catching a cat.`;
+		}
+
+		if (hasImpossibleRole || Math.random() <= rewardChance) {
+			let reward = hasImpossibleRole ? getImpossibleReward() : determineDynamicReward(isBooster);
+			let wasDoubled = false;
+
+			if (!hasImpossibleRole) {
+				const isEvenHour = gmt8Hour % 2 === 0;
+				if (isEvenHour && Math.random() < 0.5) {
+					reward.xp *= 2;
+					wasDoubled = true;
+				}
+			}
+
+			const success = await grantApiXp(previousMessage.author.id, previousMessage.guildId, reward.xp);
+			const catImageUrl = await getCatImageUrl();
+
+			if (success) {
+				let rewardLine = `You received ${reward.article} **${reward.name} Crate** containing \\`${reward.xp} XP\\`!`;
+				if (wasDoubled) rewardLine += ' **(DOUBLED!)**';
+
+				await message.channel.send({
+					allowedMentions: { repliedUser: false },
+					flags: MessageFlags.IsComponentsV2 | MessageFlags.SuppressNotifications,
+					components: [
+						{
+							type: 17,
+							accent_color: reward.color,
+							components: [
+								{
+									type: 9,
+									components: [
+										{ type: 10, content: `# Lucky you!\n_You caught a cat and got rewarded for it._ _ _` },
+										{ type: 10, content: rewardLine }
+									],
+									accessory: { type: 11, media: { url: catImageUrl } }
+								},
+								{ type: 14, divider: true, spacing: 1 },
+								{ type: 10, content: `-# ${chanceMessage}` }
+							]
+						}
+					],
+					reply: { messageReference: previousMessage.id, failIfNotExists: false }
+				});
+			}
+		}
+		return true;
+	} catch (error) {
+		console.error('Error while processing the cat catch event:', error);
+		return false;
+	}
+};
+      
